@@ -1,0 +1,40 @@
+<!doctype html>
+
+<html lang="en">
+<head>
+    <title>Klaxoon Knowledge Check Poll Generator</title>
+    <script src="index.js" type="module"></script>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<article id="courseSelect">
+    <h2>Generate Poll</h2>
+    <form>
+        <p>Course ID: <input id="fieldCourseId" placeholder="ex: az-204"></p>
+        <p>Locale: <input id="fieldLocale" value="en-us"></p>
+        <button type="button" id="commandGetCourse">Select</button>
+    </form>
+</article>
+<article id="fetchCourse">
+    <h2>Fetching Course</h2>
+    <p>This operation may take a number of minutes. Please wait...</p>
+</article>
+<article id="fetchError">
+    <h2>Could not fetch course</h2>
+    <a>Failed to fetch knowledge check for course <span id="labelCourseId"></span> (<span id="labelLocale"></span></a>
+</article>
+<article id="selectUnits">
+    <h2>Select Units</h2>
+    <form id="formUnits">
+        <p>Session Title: <input id="fieldSessionTitle"></p>
+        <menu id="selectModules">
+        </menu>
+        <p><button type="button" id="commandGenerate">Generate</button></p>
+    </form>
+</article>
+<article id="generate">
+    <h2>Generating</h2>
+    <p>Please wait...</p>
+</article>
+</body>
+</html>

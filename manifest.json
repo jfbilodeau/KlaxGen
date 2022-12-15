@@ -1,0 +1,22 @@
+{
+  "name": "Klaxoon Knowledge Check Poll Generator",
+  "version": "0.0.0.1",
+  "manifest_version": 3,
+  "description": "An extension generate polls based on knowledge checks in Klaxoon.",
+  "icons": {
+    "128": "icons/icon128x128.png"
+  },
+  "action": {
+    "default_popup": "index.html"
+  },
+  "permissions": [
+    "tabs",
+    "debugger"
+  ],
+  "content_scripts": [
+    {
+      "matches": ["https://enterprise.klaxoon.com/userspace/studio/manager/activities/*"],
+      "js": ["scripts/klaxoon.js"]
+    }
+  ]
+}
