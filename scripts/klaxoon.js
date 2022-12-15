@@ -79,7 +79,6 @@ async function createSession (options) {
 
   await pause()
 
-  console.log(`Sending keys...`)
   await chrome.runtime.sendMessage({
     action: `execute`,
     keys: `${title}`
@@ -91,7 +90,12 @@ async function createSession (options) {
   createButton.click()
 
   await pause()
+
   await generatePolls(options.units)
+
+  await chrome.runtime.sendMessage({
+    action: `done`
+  })
 }
 
 chrome.runtime.onMessage.addListener(async (request) => {

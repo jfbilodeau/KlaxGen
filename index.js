@@ -54,7 +54,7 @@ async function getCourse () {
         for (const unit of module.units) {
           if (unit.questions.length) {
             const element = document.createElement(`li`)
-            element.innerHTML = `<b>${module.title}</b><br><input type="checkbox" id="${unit.id}"> ${unit.title}`
+            element.innerHTML = `<b>${module.title}</b><br><input type="checkbox" id="${unit.id}"> <label for="${unit.id}">${unit.title}</label>`
 
             units.push(element)
           }
@@ -68,6 +68,17 @@ async function getCourse () {
     showArticle(`fetchError`)
     document.getElementById(`labelCourseId`).innerText = courseId
     document.getElementById(`labelLocale`).innerText = locale
+  }
+}
+
+async function sendKeys (keys, tab) {
+  console.log(`Executing: ${keys}`)
+  for (const key of keys) {
+    console.log(`Sending: ${key}`)
+    await chrome.debugger.sendCommand({ tabId: tab.id }, `Input.dispatchKeyEvent`, {
+      type: `char`,
+      text: key,
+    })
   }
 }
 
@@ -98,14 +109,12 @@ async function initialize () {
       switch (m.action) {
         case `execute`:
           const keys = m.keys
-          console.log(`Executing: ${keys}`)
-          for (const key of keys) {
-            console.log(`Sending: ${key}`)
-            await chrome.debugger.sendCommand({ tabId: tab.id }, `Input.dispatchKeyEvent`, {
-              type: `char`,
-              text: key,
-            })
-          }
+          await sendKeys(keys, tab)
+          break
+        case `done`:
+          showArticle(`done`)
+          await chrome.debugger.detach({ tabId: tab.id })
+          window.close()
           break
       }
     })
