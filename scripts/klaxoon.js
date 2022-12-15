@@ -33,7 +33,7 @@ async function generatePoll (question) {
   await pause(1000)
 
   const pollField = iframeDocument.querySelector(`#poll_label`)
-  pollField.value = question.question
+  pollField.value = question.question.substring(0, 250)
 
   const createButton = iframeDocument.querySelector(`.m-dialog__button--confirm`)
   createButton.click()
