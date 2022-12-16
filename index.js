@@ -101,8 +101,9 @@ async function initialize () {
 
     showArticle(`generate`)
 
-    const [tab] = await chrome.tabs.query({ active: true })
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true })
     await chrome.tabs.update({ url: `https://enterprise.klaxoon.com/userspace/studio/manager/activities/` })
+    await pause()
     await chrome.debugger.attach({ tabId: tab.id }, `1.3`)
 
     chrome.runtime.onMessage.addListener(async m => {
