@@ -20,6 +20,7 @@ function showArticle (name) {
 
 function navigateToKlaxoon (e) {
   e.preventDefault()
+
   chrome.tabs.create({ url: `https://enterprise.klaxoon.com/userspace/studio/manager/activities/` })
 }
 
@@ -29,7 +30,7 @@ async function getCourse () {
   const courseId = document.getElementById(`fieldCourseId`).value
   const locale = document.getElementById(`fieldLocale`).value
 
-  const response = await fetch(`http://localhost:3000/kc/document?courseId=${courseId}&locale=${locale}&raw=true`)
+  const response = await fetch(`https://jftools.azurewebsites.net/kc/document?courseId=${courseId}&locale=${locale}&format=json`)
 
   if (response.ok) {
     course = await response.json()
@@ -66,6 +67,7 @@ async function getCourse () {
     ul.replaceChildren(...units)
   } else {
     showArticle(`fetchError`)
+
     document.getElementById(`labelCourseId`).innerText = courseId
     document.getElementById(`labelLocale`).innerText = locale
   }
@@ -82,55 +84,126 @@ async function sendKeys (keys, tab) {
   }
 }
 
-async function initialize () {
-  document.getElementById(`commandGetCourse`).addEventListener(`click`, (e) => {
-    getCourse()
+async function generateKlaxoonSession (script) {
+  showArticle(`generate`)
+
+  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true })
+  await chrome.tabs.update({ url: `https://enterprise.klaxoon.com/userspace/studio/manager/activities/` })
+  await pause()
+  await chrome.debugger.attach({ tabId: tab.id }, `1.3`)
+
+  chrome.runtime.onMessage.addListener(async m => {
+    switch (m.action) {
+      case `execute`:
+        const keys = m.keys
+        await sendKeys(keys, tab)
+        break
+      case `done`:
+        showArticle(`done`)
+        await chrome.debugger.detach({ tabId: tab.id })
+        window.close()
+        break
+    }
   })
 
-  document.getElementById(`commandGenerate`).addEventListener(`click`, async (e) => {
-    const sessionTitle = document.getElementById(`fieldSessionTitle`).value
-    const units = []
+  await pause(2000)
 
-    const checkBoxes = document.querySelectorAll(`#formUnits input[type="checkbox"]`)
-    checkBoxes.forEach(e => {
+  await chrome.tabs.sendMessage(tab.id, {
+    action: 'createSession',
+    options: {
+      script,
+    }
+  })
+}
+
+async function generateFromCourseId () {
+  const title = document.getElementById(`fieldSessionTitle`).value
+  const units = []
+
+  const script = {
+    title,
+    activities: []
+  }
+
+  const checkBoxes = document.querySelectorAll(`#formUnits input[type="checkbox"]`)
+  checkBoxes.forEach(e => {
       if (e.checked) {
         const unit = course.units.find(u => u.id === e.id)
-        units.push(unit)
+
+        unit.questions.forEach(q => {
+          const activity = {
+            question: q.question,
+            type: `poll`,
+            choices: q.options,
+            answer: q.answer,
+            answerText: q.answerText
+          }
+
+          script.activities.push(activity)
+        })
       }
-    })
+    }
+  )
 
-    showArticle(`generate`)
+  await generateKlaxoonSession(script)
+}
 
-    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true })
-    await chrome.tabs.update({ url: `https://enterprise.klaxoon.com/userspace/studio/manager/activities/` })
-    await pause()
-    await chrome.debugger.attach({ tabId: tab.id }, `1.3`)
+function compileScript (text) {
+  const rawLines = text.split(`\n`).map(l => l.trim())
 
-    chrome.runtime.onMessage.addListener(async m => {
-      switch (m.action) {
-        case `execute`:
-          const keys = m.keys
-          await sendKeys(keys, tab)
-          break
-        case `done`:
-          showArticle(`done`)
-          await chrome.debugger.detach({ tabId: tab.id })
-          window.close()
-          break
-      }
-    })
+  const lines = []
 
-    await pause(2000)
-
-    await chrome.tabs.sendMessage(tab.id, {
-      action: 'createSession',
-      options: {
-        title: sessionTitle,
-        course,
-        units
-      }
-    })
+  rawLines.forEach(l => {
+    if (l === `` || l.startsWith(`#`)) {
+      // skip!
+    } else
+      lines.push(l)
   })
+
+  const script = {
+    title: lines.shift(),
+    activities: [],
+  }
+
+  let i = 0
+  while (i < lines.length) {
+    const [type, question] = lines[i].split(`:`, 2)
+
+    console.log(`${type}: ${question}`)
+
+    i++
+
+    const activity = {
+      type,
+      question,
+      choices: [],
+    }
+
+    while (i < lines.length && lines[i].startsWith(`-`)) {
+      const choice = lines[i].substring(1).trim()
+
+      activity.choices.push(choice)
+
+      i++
+    }
+
+    script.activities.push(activity)
+  }
+  return script
+}
+
+async function generateFromScript () {
+  const text = document.getElementById(`script`).value
+
+  const script = compileScript(text)
+
+  generateKlaxoonSession(script)
+}
+
+async function initialize () {
+  document.getElementById(`commandGetCourse`).addEventListener(`click`, getCourse)
+  document.getElementById(`commandGenerate`).addEventListener(`click`, generateFromCourseId)
+  document.getElementById('commandGenerateKlaxGen').addEventListener(`click`, generateFromScript)
 
   showArticle(`courseSelect`)
 }

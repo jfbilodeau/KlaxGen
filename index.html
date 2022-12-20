@@ -9,11 +9,33 @@
 <body>
 <article id="courseSelect">
     <h2>Generate Poll</h2>
+    <p>Generate from Knowledge Check:</p>
     <form>
         <p>Course ID: <input id="fieldCourseId" placeholder="ex: az-204"></p>
         <p>Locale: <input id="fieldLocale" value="en-us"></p>
         <button type="button" id="commandGetCourse">Select</button>
     </form>
+    <p>Generate from KlaxGen:</p>
+    <form>
+        <p>
+            KlaxGen Script:<br>
+            <textarea cols="80" rows="20" id="script">
+#Comment
+Session title
+
+Poll: What is your favourite food?
+- Pizza
+- Poutine
+- Pad Thai
+
+Poll: The cake is a lie?
+- True
+- False
+            </textarea>
+        </p>
+        <p><button type="button" id="commandGenerateKlaxGen">Generate</button></p>
+    </form>
+
 </article>
 <article id="fetchCourse">
     <h2>Fetching Course</h2>

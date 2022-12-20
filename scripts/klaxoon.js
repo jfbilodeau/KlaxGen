@@ -8,7 +8,7 @@ function pause (timeout = 1000) {
   })
 }
 
-async function generatePoll (question) {
+async function generatePoll (activity) {
   const iframe = document.querySelector(`iframe.absolute`)
   const iframeDocument = iframe.contentDocument.documentElement
 
@@ -33,7 +33,7 @@ async function generatePoll (question) {
   await pause(1000)
 
   const pollField = iframeDocument.querySelector(`#poll_label`)
-  pollField.value = question.question.substring(0, 250)
+  pollField.value = activity.question.substring(0, 250)
 
   const createButton = iframeDocument.querySelector(`.m-dialog__button--confirm`)
   createButton.click()
@@ -41,13 +41,13 @@ async function generatePoll (question) {
   await pause()
 
   const addOptionButton = iframeDocument.querySelector(`button[title="add"]`)
-  for (let i = 2; i < question.options.length; i++) {
+  for (let i = 2; i < activity.choices.length; i++) {
     addOptionButton.click()
     await pause(100)
   }
 
-  for (const index in question.options) {
-    const option = question.options[index]
+  for (const index in activity.choices) {
+    const option = activity.choices[index]
     let selector = index < 2 ? `#poll_choices_${index}_label` : `#poll_choices_answer_${index}_label`
     const optionField = iframeDocument.querySelector(selector)
     optionField.value = option
@@ -59,16 +59,14 @@ async function generatePoll (question) {
   await pause()
 }
 
-async function generatePolls (units) {
-  for (const unit of units) {
-    for (const question of unit.questions)
-      await generatePoll(question)
+async function generatePolls (script) {
+  for (const activity of script.activities) {
+    await generatePoll(activity)
   }
 }
 
 async function createSession (options) {
-  const title = options.title
-
+  const script = options.script
   const newButton = document.querySelector(`.floating-btn`)
 
   newButton.click()
@@ -81,7 +79,7 @@ async function createSession (options) {
 
   await chrome.runtime.sendMessage({
     action: `execute`,
-    keys: `${title}`
+    keys: `${script.title}`
   })
 
   await pause()
@@ -91,7 +89,7 @@ async function createSession (options) {
 
   await pause()
 
-  await generatePolls(options.units)
+  await generatePolls(script)
 
   await chrome.runtime.sendMessage({
     action: `done`
@@ -99,6 +97,7 @@ async function createSession (options) {
 }
 
 chrome.runtime.onMessage.addListener(async (request) => {
+  console.log(request)
   switch (request.action) {
     case `createSession`:
       await createSession(request.options)
