@@ -92,19 +92,27 @@ async function generateKlaxoonSession (script) {
   await pause()
   await chrome.debugger.attach({ tabId: tab.id }, `1.3`)
 
-  chrome.runtime.onMessage.addListener(async m => {
-    switch (m.action) {
-      case `execute`:
-        const keys = m.keys
-        await sendKeys(keys, tab)
-        break
-      case `done`:
-        showArticle(`done`)
-        await chrome.debugger.detach({ tabId: tab.id })
-        window.close()
-        break
+  const listener = () => {
+    return async m => {
+      switch (m.action) {
+        case `execute`:
+          const keys = m.keys
+          await sendKeys(keys, tab)
+          break
+        case `done`:
+          chrome.runtime.onMessage.removeListener(listener)
+
+          showArticle(`done`)
+
+          await chrome.debugger.detach({ tabId: tab.id })
+
+          window.close()
+          break
+      }
     }
-  })
+  }
+
+  chrome.runtime.onMessage.addListener(listener)
 
   await pause(2000)
 
