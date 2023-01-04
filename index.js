@@ -24,59 +24,65 @@ function navigateToKlaxoon (e) {
   chrome.tabs.create({ url: `https://enterprise.klaxoon.com/userspace/studio/manager/activities/` })
 }
 
+function displayCourseFetchError (courseId, locale) {
+  showArticle(`fetchError`)
+
+  document.getElementById(`labelCourseId`).innerText = courseId
+  document.getElementById(`labelLocale`).innerText = locale
+}
+
 async function getCourse () {
   showArticle(`fetchCourse`)
 
   const courseId = document.getElementById(`fieldCourseId`).value
   const locale = document.getElementById(`fieldLocale`).value
 
-  const response = await fetch(`https://jftools.azurewebsites.net/kc/document?courseId=${courseId}&locale=${locale}&format=json`)
+  const response = await fetch(`https://tools.jfbilodeau.com/kc/generate?courseId=${courseId}&locale=${locale}&format=json&all=true`)
 
-  if (response.ok) {
-    course = await response.json()
+  if (!response.ok) {
+    displayCourseFetchError(courseId, locale)
+    return
+  }
 
-    // Flatten units
-    course.units = []
-    course.paths.forEach(p => {
-      p.modules.forEach(m => {
-        course.units.push(...m.units)
-      })
+  course = await response.json()
+
+  // Flatten units
+  course.units = []
+
+  course.paths.forEach(p => {
+    p.modules.forEach(m => {
+      course.units.push(...m.units)
     })
+  })
 
-    showArticle(`selectUnits`)
+  showArticle(`selectUnits`)
 
-    document.getElementById(`fieldSessionTitle`).value = course.title
+  document.getElementById(`fieldSessionTitle`).value = course.title
 
-    const units = []
+  const units = []
 
-    for (const path of course.paths) {
-      for (const module of path.modules) {
+  for (const path of course.paths) {
+    for (const module of path.modules) {
+      for (const unit of module.units) {
+        if (unit.questions.length) {
+          const element = document.createElement(`li`)
+          element.innerHTML = `<b>${module.title}</b><br><input type="checkbox" id="${unit.id}"> <label for="${unit.id}">${unit.title}</label>`
 
-        for (const unit of module.units) {
-          if (unit.questions.length) {
-            const element = document.createElement(`li`)
-            element.innerHTML = `<b>${module.title}</b><br><input type="checkbox" id="${unit.id}"> <label for="${unit.id}">${unit.title}</label>`
-
-            units.push(element)
-          }
+          units.push(element)
         }
       }
     }
-
-    const ul = document.getElementById(`selectModules`)
-    ul.replaceChildren(...units)
-  } else {
-    showArticle(`fetchError`)
-
-    document.getElementById(`labelCourseId`).innerText = courseId
-    document.getElementById(`labelLocale`).innerText = locale
   }
+
+  const ul = document.getElementById(`selectModules`)
+  ul.replaceChildren(...units)
+
 }
 
 async function sendKeys (keys, tab) {
   console.log(`Executing: ${keys}`)
   for (const key of keys) {
-    console.log(`Sending: ${key}`)
+    // console.log(`Sending: ${key}`)
     await chrome.debugger.sendCommand({ tabId: tab.id }, `Input.dispatchKeyEvent`, {
       type: `char`,
       text: key,
@@ -89,26 +95,31 @@ async function generateKlaxoonSession (script) {
 
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true })
   await chrome.tabs.update({ url: `https://enterprise.klaxoon.com/userspace/studio/manager/activities/` })
-  await pause()
+  var debugTargets = await chrome.debugger.getTargets()
+
+  // if (debugTargets.some(t => t.tabId === tab.id)) {
+  //   await chrome.debugger.detach({ tabId: tab.id })
+  // }
+  // await pause()
   await chrome.debugger.attach({ tabId: tab.id }, `1.3`)
 
-  const listener = () => {
-    return async m => {
-      switch (m.action) {
-        case `execute`:
-          const keys = m.keys
-          await sendKeys(keys, tab)
-          break
-        case `done`:
-          chrome.runtime.onMessage.removeListener(listener)
+  const listener = async message => {
+    switch (message.action) {
+      case `sendKeys`:
+        const keys = message.keys
+        await sendKeys(keys, tab)
+        break
+      case `done`:
+        chrome.runtime.onMessage.removeListener(listener)
 
-          showArticle(`done`)
+        showArticle(`done`)
 
-          await chrome.debugger.detach({ tabId: tab.id })
+        await chrome.debugger.detach({ tabId: tab.id })
 
-          window.close()
-          break
-      }
+        window.close()
+        break
+      default:
+        throw new Error(`Unknown action: ${message.action}`)
     }
   }
 

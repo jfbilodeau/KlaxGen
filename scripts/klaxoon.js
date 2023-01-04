@@ -8,6 +8,11 @@ function pause (timeout = 1000) {
   })
 }
 
+function click(selector) {
+  const button = iframeDocument.querySelector(`button[data-select-choice-item="poll"]`)
+  button.click()
+}
+
 async function generatePoll (activity) {
   const iframe = document.querySelector(`iframe.absolute`)
   const iframeDocument = iframe.contentDocument.documentElement
@@ -72,13 +77,14 @@ async function createSession (options) {
   newButton.click()
 
   await pause()
+
   const sessionButton = document.querySelector(`button[data-qa="menu-meeting"]`)
   sessionButton.click()
 
   await pause()
 
   await chrome.runtime.sendMessage({
-    action: `execute`,
+    action: `sendKeys`,
     keys: `${script.title}`
   })
 
