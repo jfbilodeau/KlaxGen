@@ -95,12 +95,12 @@ async function generateKlaxoonSession (script) {
 
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true })
   await chrome.tabs.update({ url: `https://enterprise.klaxoon.com/userspace/studio/manager/activities/` })
-  var debugTargets = await chrome.debugger.getTargets()
 
+  // var debugTargets = await chrome.debugger.getTargets()
   // if (debugTargets.some(t => t.tabId === tab.id)) {
   //   await chrome.debugger.detach({ tabId: tab.id })
   // }
-  // await pause()
+  await pause()
   await chrome.debugger.attach({ tabId: tab.id }, `1.3`)
 
   const listener = async message => {
@@ -137,7 +137,6 @@ async function generateKlaxoonSession (script) {
 
 async function generateFromCourseId () {
   const title = document.getElementById(`fieldSessionTitle`).value
-  const units = []
 
   const script = {
     title,
