@@ -13,8 +13,6 @@ function showArticle (name) {
 
   activities.forEach((activity) => activity.hidden = true)
 
-  console.log(`showing ${name}`)
-
   document.getElementById(name).hidden = false
 }
 
@@ -22,6 +20,14 @@ function navigateToKlaxoon (e) {
   e.preventDefault()
 
   chrome.tabs.create({ url: `https://enterprise.klaxoon.com/userspace/studio/manager/activities/` })
+}
+
+function displayError (error) {
+  showArticle(`error`)
+
+  document.getElementById(`labelErrorMessage`).innerText = error.message
+
+  document.getElementById(`labelErrorDetails`).innerText = error.stack
 }
 
 function displayCourseFetchError (courseId, locale) {
@@ -76,13 +82,10 @@ async function getCourse () {
 
   const ul = document.getElementById(`selectModules`)
   ul.replaceChildren(...units)
-
 }
 
 async function sendKeys (keys, tab) {
-  console.log(`Executing: ${keys}`)
   for (const key of keys) {
-    // console.log(`Sending: ${key}`)
     await chrome.debugger.sendCommand({ tabId: tab.id }, `Input.dispatchKeyEvent`, {
       type: `char`,
       text: key,
@@ -92,6 +95,12 @@ async function sendKeys (keys, tab) {
 
 async function generateKlaxoonSession (script) {
   showArticle(`generate`)
+
+  const warnings = script.warnings.reduce((p, c) => `${p}\n${c}`)
+
+  if (warnings) {
+    document.getElementById('labelGenerateWarnings').innerText = warnings
+  }
 
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true })
   await chrome.tabs.update({ url: `https://enterprise.klaxoon.com/userspace/studio/manager/activities/` })
@@ -136,34 +145,38 @@ async function generateKlaxoonSession (script) {
 }
 
 async function generateFromCourseId () {
-  const title = document.getElementById(`fieldSessionTitle`).value
+  try {
+    const title = document.getElementById(`fieldSessionTitle`).value
 
-  const script = {
-    title,
-    activities: []
-  }
-
-  const checkBoxes = document.querySelectorAll(`#formUnits input[type="checkbox"]`)
-  checkBoxes.forEach(e => {
-      if (e.checked) {
-        const unit = course.units.find(u => u.id === e.id)
-
-        unit.questions.forEach(q => {
-          const activity = {
-            question: q.question,
-            type: `poll`,
-            choices: q.options,
-            answer: q.answer,
-            answerText: q.answerText
-          }
-
-          script.activities.push(activity)
-        })
-      }
+    const script = {
+      title,
+      activities: []
     }
-  )
 
-  await generateKlaxoonSession(script)
+    const checkBoxes = document.querySelectorAll(`#formUnits input[type="checkbox"]`)
+    checkBoxes.forEach(e => {
+        if (e.checked) {
+          const unit = course.units.find(u => u.id === e.id)
+
+          unit.questions.forEach(q => {
+            const activity = {
+              question: q.question,
+              type: `poll`,
+              choices: q.options,
+              answer: q.answer,
+              answerText: q.answerText
+            }
+
+            script.activities.push(activity)
+          })
+        }
+      }
+    )
+
+    await generateKlaxoonSession(script)
+  } catch (e) {
+    displayError(e)
+  }
 }
 
 function compileScript (text) {
@@ -181,13 +194,30 @@ function compileScript (text) {
   const script = {
     title: lines.shift(),
     activities: [],
+    warnings: [],
+  }
+
+  if (script.title.length > 80) {
+    script.warnings.push(`The session title is longer than 80 characters. It will be truncated.`)
   }
 
   let i = 0
   while (i < lines.length) {
     const [type, question] = lines[i].split(`:`, 2)
 
+    if (!type) {
+      throw new Error(`'Poll: ' expected`)
+    }
+
+    if (!question) {
+      throw new Error(`Question missing after 'Poll:'`)
+    }
+
     console.log(`${type}: ${question}`)
+
+    if (question.length > 250) {
+      script.warnings.push(`The following question exceeds 250 characters. It will be truncated. '${question}'`)
+    }
 
     i++
 
@@ -200,7 +230,15 @@ function compileScript (text) {
     while (i < lines.length && lines[i].startsWith(`-`)) {
       const choice = lines[i].substring(1).trim()
 
+      if (!choice) {
+        throw new Error(`Choice missing after dash (-)`)
+      }
+
       activity.choices.push(choice)
+
+      if (choice.length > 250) {
+        script.warnings.push(`The following option is longer than 250 characters. It will be truncated. '${choice}'`)
+      }
 
       i++
     }
@@ -211,11 +249,15 @@ function compileScript (text) {
 }
 
 async function generateFromScript () {
-  const text = document.getElementById(`script`).value
+  try {
+    const text = document.getElementById(`script`).value
 
-  const script = compileScript(text)
+    const script = compileScript(text)
 
-  generateKlaxoonSession(script)
+    await generateKlaxoonSession(script)
+  } catch (e) {
+    displayError(e)
+  }
 }
 
 async function initialize () {

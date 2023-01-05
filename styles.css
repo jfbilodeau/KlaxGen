@@ -2,3 +2,13 @@ html {
     height: 600px;
     width: 800px;
 }
+
+code,pre {
+    background-color: #eaeaea;
+    padding: .25em;
+    font-size: 110%;
+}
+
+.warnings {
+    background-color: lightyellow;
+}

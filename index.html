@@ -45,7 +45,16 @@ Poll: The cake is a lie?
 </article>
 <article id="fetchError">
     <h2>Could not fetch course</h2>
-    <a>Failed to fetch knowledge check for course <span id="labelCourseId"></span> (<span id="labelLocale"></span>)</a>
+    <p>Failed to fetch knowledge check for course <span id="labelCourseId"></span> (<span id="labelLocale"></span>)</p>
+</article>
+<article id="error">
+    <h2>Error</h2>
+    <p>Sorry, an error occured. Message: <code><span id="labelErrorMessage"></span></code></p>
+    <p>Please send feedback to <a href="mailto:jbilodeau@microsoft.com">jbilodeau@microsoft.com</a></p>
+    <details open>
+        <summary>Error details</summary>
+        <pre id="labelErrorDetails"></pre>
+    </details>
 </article>
 <article id="selectUnits">
     <h2>Select Units</h2>
@@ -65,6 +74,7 @@ Poll: The cake is a lie?
 <article id="done">
     <h2>Done!</h2>
     <p>Your Klaxoon Knowledge Check poll is ready.</p>
+    <p id="labelGenerateWarnings" class="warnings"></p>
 </article>
 </body>
 </html>
