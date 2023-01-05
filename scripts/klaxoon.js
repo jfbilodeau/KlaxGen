@@ -20,7 +20,6 @@ async function getAllElements (selector, document = window.document, timeout = 5
     element = document.querySelectorAll(selector)
 
     if (element.length === 0) {
-      console.log(`Could not query '${selector}' (${Date.now()}`)
       if (Date.now() > startTime + timeout) {
         console.log(`Time out querying '${selector}'`)
 
