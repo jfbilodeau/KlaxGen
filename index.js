@@ -84,7 +84,7 @@ async function getCourse () {
   ul.replaceChildren(...units)
 }
 
-async function sendKeys (keys, tab) {
+async function sendKeys (tab, keys) {
   for (const key of keys) {
     await chrome.debugger.sendCommand({ tabId: tab.id }, `Input.dispatchKeyEvent`, {
       type: `char`,
@@ -93,10 +93,47 @@ async function sendKeys (keys, tab) {
   }
 }
 
+async function sendClick (tab, button, x, y) {
+  await chrome.debugger.sendCommand({ tabId: tab.id }, `Input.dispatchMouseEvent`, {
+    type: `mousePressed`,
+    button,
+    x,
+    y,
+  })
+
+  await pause(100)
+
+  await chrome.debugger.sendCommand({ tabId: tab.id }, `Input.dispatchMouseEvent`, {
+    type: `mouseReleased`,
+    button,
+    x,
+    y,
+  })
+}
+
+async function focus(tab, selector) {
+  const document = await chrome.debugger.sendCommand({ tabId: tab.id}, `DOM.getDocument`, {
+    depth: -1
+  })
+
+  const rootId = document.root.nodeId
+
+  const element = await chrome.debugger.sendCommand({ tabId: tab.id }, `DOM.querySelector`, {
+    nodeId: rootId,
+    selector,
+  })
+
+  const elementId = element.nodeId
+
+  await chrome.debugger.sendCommand({ tabId: tab.id }, `DOM.focus`, {
+    nodeId: elementId
+  })
+}
+
 async function generateKlaxoonSession (script) {
   showArticle(`generate`)
 
-  const warnings = script.warnings.reduce((p, c) => `${p}\n${c}`)
+  const warnings = script.warnings.reduce((p, c) => `${p}\n${c}`, ``)
 
   if (warnings) {
     document.getElementById('labelGenerateWarnings').innerText = warnings
@@ -113,11 +150,21 @@ async function generateKlaxoonSession (script) {
   await chrome.debugger.attach({ tabId: tab.id }, `1.3`)
 
   const listener = async message => {
+    console.log(message)
     switch (message.action) {
       case `sendKeys`:
         const keys = message.keys
-        await sendKeys(keys, tab)
+        await sendKeys(tab, keys)
         break
+
+      case `sendClick`:
+        await sendClick(tab, message.button, message.x, message.y)
+        break
+
+      case `focus`:
+        await focus(tab, message.selector)
+        break;
+
       case `done`:
         chrome.runtime.onMessage.removeListener(listener)
 
@@ -127,6 +174,7 @@ async function generateKlaxoonSession (script) {
 
         window.close()
         break
+
       default:
         throw new Error(`Unknown action: ${message.action}`)
     }
@@ -150,7 +198,8 @@ async function generateFromCourseId () {
 
     const script = {
       title,
-      activities: []
+      activities: [],
+      warnings: [],
     }
 
     const checkBoxes = document.querySelectorAll(`#formUnits input[type="checkbox"]`)
