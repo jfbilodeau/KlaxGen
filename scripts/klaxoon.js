@@ -43,7 +43,7 @@ async function generatePoll (activity) {
   const iframe = await getElement(`iframe.absolute`)
   const iframeDocument = iframe.contentDocument.documentElement
 
-  await click(`header.m-accordion__header`, iframeDocument, 2)
+  await click(`.m-accordion__header`, iframeDocument, 2)
 
   await pause()
 
