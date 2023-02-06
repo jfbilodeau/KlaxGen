@@ -47,7 +47,8 @@ async function generatePoll (activity) {
 
   await pause()
 
-  await click(`button[data-select-choice-item="poll"]`, iframeDocument)
+  // await click(`button[data-select-choice-item="poll"]`, iframeDocument)
+  await click(`#session-klaxes-poll`, iframeDocument)
 
   await click(`button[data-select-choice-add]`, iframeDocument, 1)
 
@@ -56,7 +57,8 @@ async function generatePoll (activity) {
 
   await click(`.m-dialog__button--confirm`, iframeDocument)
 
-  const addOptionButton = await getElement(`button[title="add"]`, iframeDocument)
+  // const addOptionButton = await getElement(`button[title="add"]`, iframeDocument)
+  const addOptionButton = await getElement(`[data-action-form-collection-add]`, iframeDocument)
   for (let i = 2; i < activity.choices.length; i++) {
     await pause(100)
     addOptionButton.click()
