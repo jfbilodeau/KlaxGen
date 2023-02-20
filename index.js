@@ -175,6 +175,17 @@ async function generateKlaxoonSession (script) {
         window.close()
         break
 
+      case `error`:
+        const error = message.error
+
+        console.log(error)
+
+        displayError(error)
+
+        await chrome.debugger.detach({ tabId: tab.id })
+
+        break
+
       default:
         throw new Error(`Unknown action: ${message.action}`)
     }

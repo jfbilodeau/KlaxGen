@@ -1,6 +1,19 @@
 html {
-    height: 600px;
-    width: 800px;
+}
+
+body {
+    margin: 0;
+    padding: 0;
+
+    height: 580px;
+    width: 780px;
+
+    overflow-x: hidden;
+    overflow-y: scroll;
+}
+
+article {
+    padding: 1em;
 }
 
 code,pre {

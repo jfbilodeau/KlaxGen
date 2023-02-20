@@ -47,7 +47,6 @@ async function generatePoll (activity) {
 
   await pause()
 
-  // await click(`button[data-select-choice-item="poll"]`, iframeDocument)
   await click(`#session-klaxes-poll`, iframeDocument)
 
   await click(`button[data-select-choice-add]`, iframeDocument, 1)
@@ -57,7 +56,6 @@ async function generatePoll (activity) {
 
   await click(`.m-dialog__button--confirm`, iframeDocument)
 
-  // const addOptionButton = await getElement(`button[title="add"]`, iframeDocument)
   const addOptionButton = await getElement(`[data-action-form-collection-add]`, iframeDocument)
   for (let i = 2; i < activity.choices.length; i++) {
     await pause(100)
@@ -87,49 +85,49 @@ async function done () {
   })
 }
 
+async function reportError (error) {
+  await chrome.runtime.sendMessage({
+    action: `error`,
+    error: {  // Need to manually stringify Error
+      name: error.name,
+      message: error.message,
+      stack: error.stack,
+    }
+  })
+}
+
 async function createSession (options) {
-  const script = options.script
+  try {
+    const script = options.script
 
-  await click(`.floating-btn`)
+    await click(`.floating-btn`)
 
-  await click(`button[data-qa="menu-meeting"]`)
+    await click(`button[data-qa="menu-meeting"]`)
 
-  console.log(`Sending keys...`)
+    await chrome.runtime.sendMessage({
+      action: `focus`,
+      selector: `input[aria-label='Session name']`,
+    })
 
-  // const fieldSessionTitle = await getElement(`input[aria-label='Session name']`)
-  // fieldSessionTitle.id = `fieldSessionTitle`
-  // const boundingRect = fieldSessionTitle.getBoundingClientRect()
-  // const x = boundingRect.x + boundingRect.width / 2
-  // const y = boundingRect.y + boundingRect.height / 2
-  //
-  // await chrome.runtime.sendMessage({
-  //   action: `sendClick`,
-  //   button: `left`,
-  //   x,
-  //   y
-  // })
+    await pause(100)
 
-  await chrome.runtime.sendMessage({
-    action: `focus`,
-    selector: `input[aria-label='Session name']`,
-  })
+    await chrome.runtime.sendMessage({
+      action: `sendKeys`,
+      keys: `\t\t${script.title}`
+    })
 
-  await pause(100)
+    console.log(`Keys sent!`)
 
-  await chrome.runtime.sendMessage({
-    action: `sendKeys`,
-    keys: `\t\t${script.title}`
-  })
+    await pause()
 
-  console.log(`Keys sent!`)
+    await click(`div.create-btn button`)
 
-  await pause()
+    await generatePolls(script)
 
-  await click(`div.create-btn button`)
-
-  await generatePolls(script)
-
-  await done()
+    await done()
+  } catch (e) {
+    await reportError(e)
+  }
 }
 
 chrome.runtime.onMessage.addListener(async (request) => {
