@@ -263,6 +263,7 @@ function compileScript (text) {
 
   let i = 0
   while (i < lines.length) {
+    console.log(lines[i])
     const [type, question] = lines[i].split(`:`, 2)
 
     if (!type) {
@@ -270,7 +271,7 @@ function compileScript (text) {
     }
 
     if (!question) {
-      throw new Error(`Question missing after 'Poll:'`)
+      throw new Error(`Question missing after 'Poll:' (Make sure your question is on a single line)`)
     }
 
     console.log(`${type}: ${question}`)
