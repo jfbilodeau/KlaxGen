@@ -72,9 +72,39 @@ async function generatePoll (activity) {
   await click(`#poll_valid`, iframeDocument)
 }
 
-async function generatePolls (script) {
+async function generateStorm (activity) {
+  const iframe = await getElement(`iframe.absolute`)
+  const iframeDocument = iframe.contentDocument.documentElement
+
+  await click(`.m-accordion__header`, iframeDocument, 2)
+
+  await pause()
+
+  await click(`#session-klaxes-storm`, iframeDocument)
+
+  await click(`button[data-select-choice-add]`, iframeDocument, 1)
+
+  const pollField = await getElement(`#storm_label`, iframeDocument)
+  pollField.value = activity.question.substring(0, 250)
+
+  await click(`.m-dialog__button--confirm`, iframeDocument)
+}
+
+async function generateActivities (script) {
   for (const activity of script.activities) {
-    await generatePoll(activity)
+    switch (activity.type) {
+      case 'Poll':
+        await generatePoll(activity)
+        break
+      
+      case 'Storm':
+        await generateStorm(activity)
+        break
+      
+      default:
+        await reportError(`Unexpected activity type: '${activity.type}' with question '${activity.question}'`)
+    }
+
     await pause()
   }
 }
@@ -122,7 +152,7 @@ async function createSession (options) {
 
     await click(`div.create-btn button`)
 
-    await generatePolls(script)
+    await generateActivities(script)
 
     await done()
   } catch (e) {

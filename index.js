@@ -266,12 +266,18 @@ function compileScript (text) {
     console.log(lines[i])
     const [type, question] = lines[i].split(`:`, 2)
 
-    if (!type) {
-      throw new Error(`'Poll: ' expected`)
+    switch (type) {
+      case 'Poll':
+      case 'Storm': // Word storm -- aka Cloud
+        // Valid question type.
+        break;
+        
+      default:
+        throw new Error(`Only 'Poll' or 'Storm' question types are supported on line ${i+1}. Found '${type} instead`)
     }
-
+    
     if (!question) {
-      throw new Error(`Question missing after 'Poll:' (Make sure your question is on a single line)`)
+      throw new Error(`Question missing after '${type}:' (Make sure your question is on a single line)`)
     }
 
     console.log(`${type}: ${question}`)
@@ -288,20 +294,22 @@ function compileScript (text) {
       choices: [],
     }
 
-    while (i < lines.length && lines[i].startsWith(`-`)) {
-      const choice = lines[i].substring(1).trim()
+    if (activity.type === `Poll`) {
+      while (i < lines.length && lines[i].startsWith(`-`)) {
+        const choice = lines[i].substring(1).trim()
 
-      if (!choice) {
-        throw new Error(`Choice missing after dash (-)`)
+        if (!choice) {
+          throw new Error(`Choice missing after dash (-)`)
+        }
+
+        activity.choices.push(choice)
+
+        if (choice.length > 250) {
+          script.warnings.push(`The following option is longer than 250 characters. It will be truncated. '${choice}'`)
+        }
+
+        i++
       }
-
-      activity.choices.push(choice)
-
-      if (choice.length > 250) {
-        script.warnings.push(`The following option is longer than 250 characters. It will be truncated. '${choice}'`)
-      }
-
-      i++
     }
 
     script.activities.push(activity)
