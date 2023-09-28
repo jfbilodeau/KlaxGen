@@ -1,6 +1,6 @@
 {
   "name": "Klaxoon Knowledge Check Poll Generator",
-  "version": "0.0.0.1",
+  "version": "0.0.0.2",
   "manifest_version": 3,
   "description": "An extension generate polls based on knowledge checks in Klaxoon.",
   "icons": {
