@@ -147,7 +147,9 @@ async function generateKlaxoonSession (script) {
   //   await chrome.debugger.detach({ tabId: tab.id })
   // }
   await pause()
+  console.log(`Attaching to tab ${tab.id}`)
   await chrome.debugger.attach({ tabId: tab.id }, `1.3`)
+  await pause()
 
   const listener = async message => {
     console.log(message)

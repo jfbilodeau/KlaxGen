@@ -1,6 +1,6 @@
 console.log(`KlaxGen driver loaded`)
 
-function pause (timeout = 1000) {
+function pause(timeout = 1000) {
   return new Promise(resolve => {
     setTimeout(() => {
       resolve()
@@ -8,11 +8,11 @@ function pause (timeout = 1000) {
   })
 }
 
-async function getElement (selector, document = window.document, index = 0, timeout = 5000) {
+async function getElement(selector, document = window.document, index = 0, timeout = 5000) {
   return (await getAllElements(selector, document, timeout))[index]
 }
 
-async function getAllElements (selector, document = window.document, timeout = 5000) {
+async function getAllElements(selector, document = window.document, timeout = 5000) {
   const startTime = Date.now()
 
   let element = null
@@ -33,13 +33,13 @@ async function getAllElements (selector, document = window.document, timeout = 5
   return element
 }
 
-async function click (selector, document = window.document, index = 0, timeout = 5000) {
+async function click(selector, document = window.document, index = 0, timeout = 5000) {
   const button = await getElement(selector, document, index, timeout)
 
   button.click()
 }
 
-async function generatePoll (activity) {
+async function generatePoll(activity) {
   const iframe = await getElement(`iframe.absolute`)
   const iframeDocument = iframe.contentDocument.documentElement
 
@@ -72,7 +72,7 @@ async function generatePoll (activity) {
   await click(`#poll_valid`, iframeDocument)
 }
 
-async function generateStorm (activity) {
+async function generateStorm(activity) {
   const iframe = await getElement(`iframe.absolute`)
   const iframeDocument = iframe.contentDocument.documentElement
 
@@ -90,17 +90,17 @@ async function generateStorm (activity) {
   await click(`.m-dialog__button--confirm`, iframeDocument)
 }
 
-async function generateActivities (script) {
+async function generateActivities(script) {
   for (const activity of script.activities) {
-    switch (activity.type) {
-      case 'Poll':
+    switch (activity.type.toLowerCase()) {
+      case 'poll':
         await generatePoll(activity)
         break
-      
-      case 'Storm':
+
+      case 'storm':
         await generateStorm(activity)
         break
-      
+
       default:
         await reportError(`Unexpected activity type: '${activity.type}' with question '${activity.question}'`)
     }
@@ -109,24 +109,24 @@ async function generateActivities (script) {
   }
 }
 
-async function done () {
+async function done() {
   await chrome.runtime.sendMessage({
     action: `done`
   })
 }
 
-async function reportError (error) {
+async function reportError(error) {
   await chrome.runtime.sendMessage({
     action: `error`,
-    error: {  // Need to manually stringify Error
+    error: JSON.stringify({  // Need to manually stringify Error
       name: error.name,
       message: error.message,
       stack: error.stack,
-    }
+    })
   })
 }
 
-async function createSession (options) {
+async function createSession(options) {
   try {
     const script = options.script
 
